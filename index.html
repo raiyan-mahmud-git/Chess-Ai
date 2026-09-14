@@ -82,7 +82,7 @@
             box-shadow: inset 0 0 0 4px red;
         }
 
-        /* AI suggestion highlight */
+        /* AI suggestion */
         .square.ai-suggest {
             box-shadow: inset 0 0 0 4px #00e676;
             animation: pulse-gold 0.8s ease-in-out infinite alternate;
@@ -285,9 +285,9 @@
     </div>
 
     <script>
-        // ============================================================
+        
         //  CONSTANTS & UNICODE
-        // ============================================================
+        
         const pieceUnicode = {
             'K': '♔',
             'Q': '♕',
@@ -303,9 +303,9 @@
             'p': '♟'
         };
 
-        // ============================================================
+        
         //  GAME STATE
-        // ============================================================
+        
         let board = [
             ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
             ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
@@ -329,11 +329,10 @@
         let hints = [];
 
         // AI suggestion state
-        let aiSuggestedMove = null; // { fromRow, fromCol, toRow, toCol }
+        let aiSuggestedMove = null; 
 
-        // ============================================================
         //  DOM REFS
-        // ============================================================
+       
         const boardEl = document.getElementById('board');
         const moveListEl = document.getElementById('moveList');
         const fenInput = document.getElementById('fenInput');
@@ -342,9 +341,9 @@
         const evalScoreEl = document.getElementById('evalScore');
         const bestMoveBtn = document.getElementById('bestMoveBtn');
 
-        // ============================================================
+       
         //  UTILITY
-        // ============================================================
+     
         function isWhitePiece(p) { return p && p === p.toUpperCase() && p !== ' '; }
 
         function isBlackPiece(p) { return p && p.toLowerCase() === p && p !== ' '; }
@@ -357,9 +356,9 @@
 
         function cloneBoard(b) { return b.map(row => [...row]); }
 
-        // ============================================================
+        
         //  ATTACK & CHECK
-        // ============================================================
+        
         function isSquareAttackedBy(board, row, col, attackerColor) {
             for (let r = 0; r < 8; r++) {
                 for (let c = 0; c < 8; c++) {
@@ -439,9 +438,9 @@
             return isSquareAttackedBy(board, king.row, king.col, oppositeColor(color));
         }
 
-        // ============================================================
-        //  PSEUDO-LEGAL MOVE GENERATION (works on any board state)
-        // ============================================================
+        
+        //  LEGAL MOVES
+        
         function getPseudoLegalMovesForState(board, row, col, castlingRights, enPassantTarget, includeSpecial = true) {
             const piece = board[row][col];
             if (!piece || piece === ' ') return [];
@@ -583,9 +582,9 @@
             return moves;
         }
 
-        // ============================================================
-        //  LEGAL MOVE FILTERING (for any state)
-        // ============================================================
+    
+        //  LEGAL MOVE FILTERING
+        
         function isMoveLegalForState(board, fromR, fromC, toR, toC, castlingRights, enPassantTarget,
             promotion = 'Q', extra = {}) {
             const piece = board[fromR][fromC];
@@ -617,7 +616,7 @@
                 boardCopy[toR][toC] = color === 'w' ? promotion.toUpperCase() : promotion.toLowerCase();
             }
 
-            // update castling rights for copy
+            // castling
             if (piece === 'K') cRights = cRights.replace(/[KQ]/g, '');
             if (piece === 'k') cRights = cRights.replace(/[kq]/g, '');
             if (piece === 'R' && fromR === 7 && fromC === 7) cRights = cRights.replace('K', '');
@@ -662,9 +661,9 @@
             return moves;
         }
 
-        // ============================================================
-        //  EXECUTE MOVE ON STATE (returns new state)
-        // ============================================================
+        
+        //  EXECUTE MOVE ON STATE
+       
         function executeMoveOnState(state, move) {
             const { board: b, turn: t, castling: cR, enPassant: ep, halfMoveClock: hm, fullMoveNumber: fm } = state;
             const { fromRow, fromCol, row: toRow, col: toCol, promotion, castling: castlingType, enPassant: epCapture,
@@ -736,12 +735,12 @@
             };
         }
 
-        // ============================================================
-        //  EVALUATION (material + piece-square tables)
-        // ============================================================
+       
+        //  EVALUATION 
+       
         const PIECE_VALUES = { P: 100, N: 320, B: 330, R: 500, Q: 900, K: 20000 };
 
-        // Piece-square tables (white's perspective, row 0 = rank 8)
+    
         const PST = {
             P: [
                 [0, 0, 0, 0, 0, 0, 0, 0],
@@ -835,9 +834,9 @@
             return score;
         }
 
-        // ============================================================
+        
         //  MINIMAX WITH ALPHA-BETA
-        // ============================================================
+        
         function minimax(state, depth, alpha, beta, isMaximizing) {
             const turnColor = state.turn;
             const moves = getAllLegalMovesForState(state.board, turnColor, state.castling, state.enPassant);
@@ -852,7 +851,7 @@
                 return evaluateState(state);
             }
 
-            // move ordering: captures first, then checks, then others
+            // move ordering
             const ordered = moves.slice().sort((a, b) => {
                 const aCap = state.board[a.row] && state.board[a.row][a.col] !== ' ' ? 1 : 0;
                 const bCap = state.board[b.row] && state.board[b.row][b.col] !== ' ' ? 1 : 0;
@@ -904,13 +903,13 @@
             return result.move || null;
         }
 
-        // ============================================================
+        
         //  AI SUGGESTION UI
-        // ============================================================
+        
         function clearAISuggestion() {
             aiSuggestedMove = null;
             renderBoard();
-            aiStatusEl.textContent = '🤖 Click "Best Move" for AI suggestion';
+            aiStatusEl.textContent = ' Click "Best Move" for AI suggestion';
             evalScoreEl.textContent = '—';
         }
 
@@ -919,16 +918,16 @@
                 // check if game is over
                 if (statusEl.textContent.includes('Checkmate') || statusEl.textContent.includes('Draw') ||
                     statusEl.textContent.includes('Stalemate')) {
-                    aiStatusEl.textContent = '⛔ Game is over. Start a new game.';
+                    aiStatusEl.textContent = 'Game is over. Start a new game.';
                     return;
                 }
             }
 
             bestMoveBtn.disabled = true;
-            aiStatusEl.textContent = '🤔 Thinking...';
+            aiStatusEl.textContent = 'Thinking...';
             evalScoreEl.textContent = '…';
 
-            // Use requestAnimationFrame to let UI update before heavy computation
+           
             setTimeout(() => {
                 try {
                     const move = findBestMove();
@@ -964,9 +963,9 @@
             }, 20);
         }
 
-        // ============================================================
-        //  GAME EXECUTION (original code adapted)
-        // ============================================================
+
+        //  GAME EXECUTION 
+       
         function attemptMove(fromRow, fromCol, toRow, toCol, promotionPiece = 'Q') {
             const piece = board[fromRow][fromCol];
             if (!piece || piece === ' ') return false;
@@ -1020,9 +1019,9 @@
             return true;
         }
 
-        // ============================================================
+     
         //  POSITION KEY (for repetition)
-        // ============================================================
+        
         function getPositionKey() {
             let key = '';
             for (let r = 0; r < 8; r++)
@@ -1032,9 +1031,9 @@
             return key;
         }
 
-        // ============================================================
+       
         //  CHECK GAME OVER
-        // ============================================================
+        
         function checkGameOver() {
             const moves = getAllLegalMovesForState(board, turn, castling, enPassant);
             if (moves.length === 0) {
@@ -1099,9 +1098,9 @@
             return false;
         }
 
-        // ============================================================
+        
         //  UNDO
-        // ============================================================
+        
         function undo() {
             if (moveHistory.length === 0) return;
             const prev = moveHistory.pop();
@@ -1122,9 +1121,9 @@
             updateMoveList();
         }
 
-        // ============================================================
+      
         //  RENDER
-        // ============================================================
+        
         function renderBoard() {
             boardEl.innerHTML = '';
             const inCheck = isKingInCheck(board, turn);
@@ -1195,9 +1194,9 @@
             });
         }
 
-        // ============================================================
+       
         //  DRAG & DROP
-        // ============================================================
+        
         let draggedPiece = null;
 
         function dragStart(e) {
@@ -1231,23 +1230,23 @@
             aiSuggestedMove = null;
         }
 
-        // ============================================================
+       
         //  CLICK
-        // ============================================================
+        
         function squareClick(e) {
             const sq = e.target.closest('.square');
             if (!sq) return;
             const row = +sq.dataset.row;
             const col = +sq.dataset.col;
 
-            // If there's an AI suggestion and user clicks the destination, make the move
+            
             if (aiSuggestedMove) {
                 if (row === aiSuggestedMove.row && col === aiSuggestedMove.col) {
                     attemptMove(aiSuggestedMove.fromRow, aiSuggestedMove.fromCol, aiSuggestedMove.row, aiSuggestedMove.col);
                     aiSuggestedMove = null;
                     return;
                 }
-                // clicking elsewhere clears the suggestion
+                
                 aiSuggestedMove = null;
                 renderBoard();
                 aiStatusEl.textContent = '🤖 Click "Best Move" for AI suggestion';
@@ -1275,9 +1274,9 @@
             renderBoard();
         }
 
-        // ============================================================
+       
         //  FEN / PGN
-        // ============================================================
+        
         function boardToFEN() {
             let fen = '';
             for (let r = 0; r < 8; r++) {
@@ -1341,9 +1340,9 @@
             return pgn.trim();
         }
 
-        // ============================================================
+       
         //  EVENT BINDINGS
-        // ============================================================
+        
         document.getElementById('undoBtn').addEventListener('click', undo);
         document.getElementById('resetBtn').addEventListener('click', () => {
             loadFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
@@ -1360,9 +1359,9 @@
         });
         document.getElementById('bestMoveBtn').addEventListener('click', suggestBestMove);
 
-        // ============================================================
+        
         //  INIT
-        // ============================================================
+      
         positionHistory.push(getPositionKey());
         renderBoard();
         updateMoveList();
