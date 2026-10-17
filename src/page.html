@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="dark light" />
+<title>Chess Lab — engine, board and analysis</title>
+<style>
+/*__CSS__*/
+</style>
+</head>
+<body>
+<a class="skip-link" href="#boardArea">Skip to the board</a>
+
+<svg class="svg-defs" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="pg-w" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#fffef9"/>
+      <stop offset="0.45" stop-color="#efe3c8"/>
+      <stop offset="1" stop-color="#b9a273"/>
+    </linearGradient>
+    <linearGradient id="pg-b" x1="0" y1="0" x2="0.25" y2="1">
+      <stop offset="0" stop-color="#7b8ca4"/>
+      <stop offset="0.45" stop-color="#2b3442"/>
+      <stop offset="1" stop-color="#05070a"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<div class="app" id="app">
+  <header class="topbar">
+<div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect x="1" y="1" width="30" height="30" rx="8" class="brand-bg"/>
+        <path d="M9 23h14l1 3H8z" class="brand-fg"/>
+        <path d="M11.5 10.5h4v6h-1.6L11.5 23h9l-2.4-6.5H16.5v-6h-5z" class="brand-fg"/>
+        <circle cx="16.5" cy="8.4" r="2.1" class="brand-fg"/>
+      </svg>
+      <div class="brand-text">
+        <h1>Chess&nbsp;Lab</h1>
+        <p>0x88 board · alpha-beta engine · Web&nbsp;Worker</p>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <button id="menuBtn" class="icon-btn menu-btn" aria-label="Settings, appearance and import" aria-expanded="false" aria-controls="appMenu" title="Settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" class="line"/></svg>
+      </button>
+      <button id="themeBtn" class="icon-btn" aria-label="Toggle dark and light theme" title="Theme">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+      </button>
+      <button id="soundBtn" class="icon-btn" aria-label="Mute or unmute sound" title="Sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 8a6 6 0 0 1 0 8" class="line"/></svg>
+      </button>
+      <button id="helpBtn" class="icon-btn" aria-label="Help and shortcuts" title="Help">?</button>
+    </div>
+
+    <div class="menu" id="appMenu" hidden>
+      <div class="menu-head">
+        <h2>Settings</h2>
+        <button type="button" class="icon-btn menu-close" id="menuClose" aria-label="Close settings">×</button>
+      </div>
+
+      <section class="menu-section">
+        <h3>Game</h3>
+        <div class="menu-grid">
+          <label class="field">
+            <span>Mode</span>
+            <select id="modeSel">
+              <option value="hvc">Human vs Computer</option>
+              <option value="hvh">Human vs Human</option>
+              <option value="cvc">Computer vs Computer</option>
+              <option value="analysis">Analysis board</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Level</span>
+            <select id="levelSel">
+              <option value="beginner">Beginner</option>
+              <option value="easy">Easy</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced" selected>Advanced</option>
+              <option value="max">Max</option>
+            </select>
+          </label>
+          <label class="field field-side" id="sideField">
+            <span>You play</span>
+            <select id="sideSel">
+              <option value="w">White</option>
+              <option value="b">Black</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Time control</span>
+            <select id="timeSel">
+              <option value="1+0">1 + 0 bullet</option>
+              <option value="3+2">3 + 2 blitz</option>
+              <option value="5+0">5 + 0 blitz</option>
+              <option value="10+0" selected>10 + 0 rapid</option>
+              <option value="15+10">15 + 10 rapid</option>
+              <option value="custom">Custom...</option>
+              <option value="none">No clock</option>
+            </select>
+          </label>
+        </div>
+        <div class="customtime" id="customTime" hidden>
+          <label><span>min</span><input type="number" id="customMin" min="1" max="180" step="1" value="10" inputmode="numeric" aria-label="Custom minutes per side" /></label>
+          <label><span>+ s</span><input type="number" id="customInc" min="0" max="120" step="1" value="0" inputmode="numeric" aria-label="Custom increment in seconds" /></label>
+        </div>
+        <div class="menu-checks">
+          <label class="switch" title="Board turns to face the side to move"><input type="checkbox" id="autoFlip" /><span>Auto-flip</span></label>
+          <label class="switch" title="Show dots for legal moves"><input type="checkbox" id="showLegal" checked /><span>Legal moves</span></label>
+          <label class="switch" title="Animate piece movement"><input type="checkbox" id="animOn" checked /><span>Animate</span></label>
+        </div>
+      </section>
+
+      <section class="menu-section">
+        <h3>Appearance</h3>
+        <div class="menu-grid">
+          <label class="field">
+            <span>Pieces</span>
+            <select id="pieceSel">
+              <option value="classic">Classic</option>
+              <option value="bold">Bold</option>
+              <option value="neo">Neo</option>
+              <option value="glass">Glass</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Board</span>
+            <select id="boardSel">
+              <option value="green">Green</option>
+              <option value="brown">Brown</option>
+              <option value="blue">Blue</option>
+              <option value="slate">Slate</option>
+              <option value="purple">Purple</option>
+              <option value="ice">Ice</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Theme</span>
+            <select id="themeSel">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </label>
+          <label class="switch" style="align-self:end;padding-bottom:9px">
+            <input type="checkbox" id="coordsOn" checked />
+            <span>Coordinates</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="menu-section">
+        <h3>Import / export</h3>
+        <div class="btn-grid">
+          <button id="copyFenBtn">Copy FEN</button>
+          <button id="copyPgnBtn">Copy PGN</button>
+          <button id="importBtn">Load FEN / PGN</button>
+          <button id="shareBtn">Copy link</button>
+        </div>
+        <p class="tiny muted">The URL hash carries the current position, so a link restores it.</p>
+        <a class="lab-link" href="?test" id="testLink">Open the test lab →</a>
+      </section>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="board-col" id="boardCol" aria-label="Board and players">
+      <div class="player" id="playerTop">
+        <div class="player-avatar" id="topAvatar">B</div>
+        <div class="player-main">
+          <div class="player-name" id="topName">Black</div>
+          <div class="player-cap" id="topCap" aria-label="Captured pieces"></div>
+        </div>
+        <div class="player-mat" id="topMat"></div>
+        <div class="clock" id="topClock" role="timer" aria-live="off">—</div>
+      </div>
+
+      <div class="board-shell" id="boardShell">
+        <div class="evalbar" id="evalBar" role="img" aria-label="Evaluation bar">
+          <div class="evalbar-fill" id="evalFill"></div>
+          <div class="evalbar-mid"></div>
+        </div>
+
+        <div class="board-area" id="boardArea">
+          <div class="board" id="board" role="grid" aria-label="Chess board" tabindex="0"></div>
+          <div class="pieces" id="pieces"></div>
+          <svg class="board-overlay" id="overlay" viewBox="0 0 8 8" preserveAspectRatio="none" aria-hidden="true"></svg>
+          <div class="promo" id="promo" hidden>
+            <div class="promo-card" role="dialog" aria-label="Choose promotion piece">
+              <p>Promote to</p>
+              <div class="promo-row" id="promoRow"></div>
+            </div>
+          </div>
+          <div class="banner" id="banner" hidden>
+            <div class="banner-card">
+              <h2 id="bannerTitle">Checkmate</h2>
+              <p id="bannerText">White wins</p>
+              <div class="banner-actions">
+                <button id="bannerAgain">New game</button>
+                <button id="bannerClose" class="ghost">Review</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="player" id="playerBottom">
+        <div class="player-avatar" id="bottomAvatar">W</div>
+        <div class="player-main">
+          <div class="player-name" id="bottomName">White</div>
+          <div class="player-cap" id="bottomCap" aria-label="Captured pieces"></div>
+        </div>
+        <div class="player-mat" id="bottomMat"></div>
+        <div class="clock" id="bottomClock" role="timer" aria-live="off">—</div>
+      </div>
+
+      <div class="underboard" id="underboard">
+        <div class="status" id="status" role="status" aria-live="polite">White to move</div>
+        <span class="evalchip" id="evalNum" title="Engine evaluation from White's point of view">0.0</span>
+      </div>
+    </section>
+
+    <aside class="side" aria-label="Game and engine">
+      <section class="panel" id="panelGame">
+        <h2>Game</h2>
+        <div class="btn-grid">
+          <button id="newBtn" class="primary">New game</button>
+          <button id="undoBtn">Undo</button>
+          <button id="redoBtn">Redo</button>
+          <button id="flipBtn">Flip</button>
+          <button id="hintBtn">Hint</button>
+          <button id="stopBtn" class="danger" hidden>Stop</button>
+          <button id="resignBtn" class="danger">Resign</button>
+          <button id="drawBtn">Offer draw</button>
+        </div>
+        <button id="analyzeBtn" class="wide">Analyze whole game</button>
+      </section>
+
+            <section class="panel" id="panelEngine">
+        <h2>Engine
+          <span class="badge" id="thinkBadge" hidden><i></i>thinking</span>
+          <span class="badge muted" id="bookBadge" hidden>book</span>
+        </h2>
+        <div class="stats" id="engineStats">
+          <div><span>depth</span><b id="stDepth">-</b></div>
+          <div><span>score</span><b id="stScore">-</b></div>
+          <div><span>nodes</span><b id="stNodes">-</b></div>
+          <div><span>nps</span><b id="stNps">-</b></div>
+        </div>
+        <div class="pv-cap">Engine line</div>
+        <div class="pv" id="enginePv" aria-live="polite"></div>
+        <div class="evalgraph" aria-hidden="true">
+          <svg id="graph" viewBox="0 0 100 34" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="engine-actions">
+          <button id="bestMoveBtn">Play best</button>
+          <button id="evalNowBtn" class="ghost">Evaluate</button>
+        </div>
+        <p class="hint" id="analysisSummary" hidden></p>
+      </section>
+
+      <section class="panel" id="panelMoves">
+        <h2>Moves <span class="badge muted" id="openingName">—</span></h2>
+        <div class="moves" id="moveList" role="listbox" aria-label="Move list" tabindex="0"></div>
+        <div class="row gap tiny">
+          <button id="firstBtn" class="ghost" aria-label="Go to start">⏮</button>
+          <button id="prevBtn" class="ghost" aria-label="Previous move">◀</button>
+          <button id="nextBtn" class="ghost" aria-label="Next move">▶</button>
+          <button id="lastBtn" class="ghost" aria-label="Go to live position">⏭</button>
+          <span class="viewbadge" id="viewBadge" hidden>reviewing</span>
+        </div>
+      </section>
+    </aside>
+  </main>
+
+  </div>
+
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
+<div class="sr-live" id="live" aria-live="assertive" role="status"></div>
+
+<dialog id="dlgImport" class="dlg">
+  <form method="dialog" class="dlg-inner">
+    <h2>Load a position or a game</h2>
+    <p class="muted tiny">Paste a FEN (one line starting with the board field) or a PGN game. Headers, comments and variations are accepted.</p>
+    <textarea id="importText" rows="8" spellcheck="false" placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"></textarea>
+    <p class="error" id="importError" hidden></p>
+    <div class="dlg-actions">
+      <button type="button" class="ghost" data-close>Cancel</button>
+      <button id="doImport" type="button" class="primary">Load</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgHelp" class="dlg">
+  <form method="dialog" class="dlg-inner">
+    <h2>How to use it</h2>
+    <h3>Playing</h3>
+    <ul class="help-list">
+      <li>Drag a piece, or click it and click its destination. The board only accepts legal moves for the side to move.</li>
+      <li>Right-click drag on the board draws arrows; right-click a square marks it. Left-click removes them.</li>
+      <li>Arrow keys move the keyboard cursor, <kbd>Enter</kbd> selects and moves, <kbd>Esc</kbd> cancels.</li>
+      <li><kbd>←</kbd> / <kbd>→</kbd> step through the game when the board is not focused.</li>
+    </ul>
+    <h3>Engine</h3>
+    <p class="tiny muted">Piece style, board palette, theme and coordinates live in the <b>Settings</b> menu (the &#9776; button). Search runs in a worker. Depth, score, nodes and the principal variation are live. <b>Hint</b> asks for a move without playing it. <b>Analysis board</b> mode keeps the engine running after every move.</p>
+    <h3>Test lab</h3>
+    <p class="tiny muted">Open <code>index.html?test</code> for perft verification, SAN/FEN round-trips, tactical tests, benchmarks and a 20-game self-play match.</p>
+    <p class="tiny muted build-tag">Build <span id="buildTag">dev</span></p>
+    <div class="dlg-actions"><button type="button" class="primary" data-close>Close</button></div>
+  </form>
+</dialog>
+
+<section class="lab" id="lab" hidden>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-text">
+        <h1>Test lab</h1>
+        <p>Perft · rules · SAN/FEN · tactics · benchmarks · self-play</p>
+      </div>
+    </div>
+    <div class="top-buttons">
+      <a class="btn" href="index.html">← Back to the board</a>
+    </div>
+  </header>
+  <div class="lab-actions">
+    <button id="runAll" class="primary">Run all tests</button>
+    <button id="runPerft">Perft only</button>
+    <button id="runBench">Benchmarks (1s/5s)</button>
+    <button id="runMatch">Self-play match (20 games × 100 ms)</button>
+    <button id="runPerftDeep" class="ghost">Perft depth+1 (slow)</button>
+  </div>
+  <div class="lab-progress" id="labProgress" hidden><div class="lab-bar"><i id="labBar"></i></div><span id="labStatus">working…</span></div>
+  <div id="labResults"></div>
+</section>
+
+<script>
+"use strict";
+(function () {
+/*__ENGINE__*/
+/*__UI__*/
+})();
+</script>
+</body>
+</html>

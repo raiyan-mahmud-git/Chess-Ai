@@ -1,0 +1,17 @@
+# Build output — regenerate with: node build.mjs
+dist/
+
+# Test dependencies (none today, but harmless)
+node_modules/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# one-off patch scripts, keep only the build tools
+/*.mjs
+!/build.mjs
+!/check-syntax.mjs
+
+node_modules/
+.DS_Store
